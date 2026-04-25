@@ -1,0 +1,2 @@
+# WebSearchSkill
+一个调用本地浏览器进行搜狗搜索websearch的AI SKILL
