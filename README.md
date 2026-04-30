@@ -1,2 +1,3 @@
-# WebSearchSkill
-一个调用本地浏览器进行搜狗搜索websearch的AI SKILL
+```uv venv -p 3.10```
+```uv pip install -r requirements.txt```
+```uv run playwright install chrome```

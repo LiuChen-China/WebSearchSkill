@@ -1,0 +1,8 @@
+﻿# 浏览器配置
+browser: 
+  # 是否无头模式
+  headless: false
+  # 是否远程模式
+  remote_mode: false
+  # 远程 CDP 端点（示例）
+  remote_cdp_endpoint: ""
