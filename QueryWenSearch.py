@@ -1,6 +1,9 @@
 from Browser import *
+from typing import List
+from Schemas import *
+import traceback
 
-async def querySearch(query: str,num=10) -> str:
+async def querySearch(query: str,num=10) -> List[QueryResult]:
     """
     查询搜索结果
     :param query: 搜索关键词
@@ -16,26 +19,38 @@ async def querySearch(query: str,num=10) -> str:
     i = 0
     for div in divs:
         try:
-            a_list = await div.locator("a").all()
-            a_first = a_list[0]  
-            a = div.find_element(By.XPATH, ".//a")
-            title = a.text
-            url = a.get_attribute("href")
-            summaryDiv = div.find_element(By.XPATH, ".//*[contains(@class,'space-txt') or contains(@class,'img-text__content') or contains(@class,'summary')]")
-            summary = summaryDiv.text
-            items.append({"title":title,"url":url,"summary":summary})
-            i += 1
-            text += f"【结果{i}】\n"
-            text += f"标题：{title}\n"
-            text += f"链接：{url}\n"
-            text += f"摘要：{summary}\n"
-            text += "\n"            
+            a = div.locator("a").first
+            title = await a.text_content()
+            url = await a.get_attribute("href")
+            summaryDiv = div.locator("xpath=.//*[contains(@class,'space-txt') or contains(@class,'img-text__content') or contains(@class,'summary')]").first
+            if await summaryDiv.count()==0:
+                continue
+            summary = await summaryDiv.text_content()
+            items.append(QueryResult(query=query,title=title,url=url,summary=summary))     
         except Exception as e:
+            #traceback.print_exc()
             pass   
-    
     await browser.close()
-    return 
+    return items[:num]
+
+async def multyQuerySearch(queries: List[str], num=10)->List[QueryResult]:
+    """
+    控制并发数量的批量搜索
+    :param queries: 搜索词列表
+    :param num: 每个词返回结果数
+    :param max_concurrent: 最大并发数
+    """
+    # 创建多个任务，每个任务会创建自己的浏览器实例
+    tasks = [querySearch(query, num) for query in queries]
+    # 同时执行所有任务（会同时打开多个浏览器）
+    results = await asyncio.gather(*tasks)
+    #展开合并结果列表
+    results = [item for sublist in results for item in sublist]
+    return results
+
 
 if __name__ == "__main__":
-    asyncio.run(querySearch("你好"))
+    queries = ["世纪华通", "阿里巴巴"]
+    results = asyncio.run(multyQuerySearch(queries))
+    print(results)
    

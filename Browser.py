@@ -10,11 +10,12 @@ class Browser:
     _instance: Optional["Browser"] = None
     _lock = Lock()
 
-    def __new__(cls, *args, **kwargs):
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-        return cls._instance
+    #后面要同步运行多个浏览器 不使用单例模式
+    # def __new__(cls, *args, **kwargs):
+    #     with cls._lock:
+    #         if cls._instance is None:
+    #             cls._instance = super().__new__(cls)
+    #     return cls._instance
 
     def __init__(self, 
                  headless: bool = config.browser.headless,
@@ -44,10 +45,7 @@ class Browser:
         if self.remote_mode:
             self._browser = await self._playwright.chromium.connect_over_cdp(self.remote_cdp)
         else:
-            self._browser = await self._playwright.chromium.launch(
-                headless=self.headless,
-                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-blink-features=AutomationControlled"]
-            )
+            self._browser = await self._playwright.chromium.launch(headless=self.headless,args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-blink-features=AutomationControlled"])
         
         # 创建上下文
         self._context = await self._browser.new_context(
