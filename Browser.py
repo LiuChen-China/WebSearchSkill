@@ -35,10 +35,14 @@ class Browser:
         self._pages: Dict[str, Page] = {}  
         self._default_page_id = "default"
         self._closed = False
-        self._initialized = True
+        self._initialized = True#单例模式状态位
+        self.start = False#浏览器是否启动
+        
 
     async def init_browser(self):
         """初始化浏览器"""
+        if self.start:
+            return
         self._playwright = await async_playwright().start()
         
         # 启动/连接浏览器
@@ -46,34 +50,32 @@ class Browser:
             self._browser = await self._playwright.chromium.connect_over_cdp(self.remote_cdp)
         else:
             self._browser = await self._playwright.chromium.launch(headless=self.headless,args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-blink-features=AutomationControlled"])
-        
         # 创建上下文
         self._context = await self._browser.new_context(
             viewport={"width": 1920, "height": 1080},
             user_agent=self.user_agent
         )
-        
         # 创建默认页面并保存
         self._page = await self._context.new_page()
         self._pages[self._default_page_id] = self._page
+        self.start = True#浏览器启动状态位
 
     # ================================= 多页面核心方法
-    async def new_page(self, page_id: str, url: Optional[str] = None) -> Page:
+    async def new_page(self, page_id: str) -> Page:
         """创建一个带唯一标识的新页面（支持多页面）"""
         if page_id in self._pages:
             return self._pages[page_id]
         
         new_p = await self._context.new_page()
         self._pages[page_id] = new_p
-        
-        if url:
-            await new_p.goto(url, wait_until="domcontentloaded")
         return new_p
 
-    def get_page(self, page_id: str = None) -> Page:
+    async def get_page(self, page_id: str = None) -> Page:
         """获取指定页面，不填则使用默认页面"""
-        if page_id is None or page_id not in self._pages:
+        if page_id is None:
             return self._pages[self._default_page_id]
+        if page_id not in self._pages:
+            return await self.new_page(page_id)
         return self._pages[page_id]
 
     async def close_page(self, page_id: str):
@@ -83,31 +85,31 @@ class Browser:
             del self._pages[page_id]
 
     # ================================= 业务方法（支持多页面）
-    async def goto(self, url: str, page_id: str = None, timeout: float = 20000):
-        page = self.get_page(page_id)
+    async def goto(self, url: str, page_id: str = None, timeout: float = 15000):
+        page = await self.get_page(page_id)
         page.set_default_navigation_timeout(timeout)
         try:
             await page.goto(url, wait_until="domcontentloaded")
         except Exception:
-            await page.evaluate("window.stop()")
-            raise
+            await page.wait_for_timeout(0)
 
     async def scroll(self, to_pos: int = 100000, page_id: str = None):
-        page = self.get_page(page_id)
+        page = await self.get_page(page_id)
         await page.evaluate(f"document.documentElement.scrollTop = {to_pos}")
 
     async def click_node(self, selector, page_id: str = None):
-        page = self.get_page(page_id)
+        page = await self.get_page(page_id)
         loc = page.locator(selector)
         await loc.first.click()
 
-    async def wait_for_elements(self, selector: str, page_id: str = None, timeout: float = 10000):
-        page = self.get_page(page_id)
-        loc = page.locator(selector)
+    async def wait_for_elements(self, selector: str, page_id: str = None, timeout: float = 10000,debug=True):
+        page = await self.get_page(page_id)
         try:
+            loc = page.locator(selector)
             await loc.first.wait_for(timeout=timeout)
         except:
-            print(f"等待元素 {selector} 超时")
+            if debug:
+                print(f"等待元素 {selector} 超时")
             return []
         return await loc.all()
 
@@ -131,8 +133,11 @@ class Browser:
         :param page_id: 页面ID，不填则使用默认页面
         :return: 页面HTML字符串
         """
-        page = self.get_page(page_id)
-        return await page.content()
+        try:
+            page = await self.get_page(page_id)
+            return await page.content()
+        except Exception as e:
+            return ""
 
     async def close(self):
         if self._closed:
