@@ -1,6 +1,7 @@
 from HotReloadConfig import config
 from trafilatura import extract
 from typing import List,Optional
+from CustomAgent import extractWebInfo
 from Browser import *
 import asyncio
 import json
@@ -13,6 +14,7 @@ async def crawlUrls(urls:Optional[List | str] = None)->List[str]:
     await browser.init_browser()
     tasks = []
     page_ids = []
+    titles = []
     for i, url in enumerate(urls):
         page_id = f"crawl_{i}"
         page_ids.append(page_id)
@@ -23,10 +25,24 @@ async def crawlUrls(urls:Optional[List | str] = None)->List[str]:
     for page_id in page_ids:
         tasks.append(browser.get_page_html(page_id=page_id))
     htmls = await asyncio.gather(*tasks)
+    for page_id in page_ids:
+        titles.append(await browser.get_page_title(page_id=page_id))
     await browser.close()
     summaries = []
-    for html in htmls:
-        summaries.append(extract(html, output_format="txt", with_metadata=False,no_fallback=True,deduplicate=True))
+    for i,html in enumerate(htmls):
+        content = extract(html, output_format="txt", with_metadata=False,no_fallback=True,deduplicate=True,include_tables=True)
+        if not content:
+            summaries.append("")
+            continue
+        if config.llm.switch:
+            try:
+                summary = await extractWebInfo(titles[i], content[:10000])[-1]['text']
+            except:
+                summary = ""
+        else:
+            summary = content[:1000] + "..." if len(content)>1000 else content
+
+        summaries.append(summary)
     return summaries
 
 

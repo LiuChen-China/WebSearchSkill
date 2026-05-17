@@ -2,7 +2,6 @@
 name: webSearch
 description: 根据查询语句进行网络搜索。
 context: fork
-timeout: 60
 ---
 
 # 网页搜索技能

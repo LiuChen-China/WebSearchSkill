@@ -6,7 +6,6 @@ from trafilatura import extract
 import traceback
 
 
-
 async def querySearchUrl(query: str,num=10) -> QueryResult:
     """
     查询搜索结果URL
@@ -31,6 +30,7 @@ async def querySearchUrl(query: str,num=10) -> QueryResult:
         text = extract(
             f"<html><body>{html}</body></html>",
             output_format="txt",
+            include_tables=True,
             with_metadata=False,
             no_fallback=True,
             deduplicate=False,

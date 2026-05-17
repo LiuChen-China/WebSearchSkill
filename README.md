@@ -7,5 +7,6 @@
 ```uv run playwright install chromium```
 
 # 运行
+```配置下config.yaml，没llm就把开关置false```
 ```uv run main.py```
 ```将skill.md加入agent的技能```

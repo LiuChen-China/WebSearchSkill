@@ -6,10 +6,11 @@ from QueryWebSearch import *
 
 app = FastAPI()
 
+
 @app.get("/webSearch", response_class=PlainTextResponse)
 async def webSearch(query: list = Query(...)):
     query = query[:3]#最多搜索3个查询
-    queryResults = await multyQuerySearch(query, num=5)
+    queryResults = await multyQuerySearch(query, num=4)
     report = ""
     for queryResult in queryResults:
         if queryResult.aiAnswer:
@@ -19,6 +20,8 @@ async def webSearch(query: list = Query(...)):
                 continue
             item.summary = item.summary.replace("\n"," ").strip()
             item.title = item.title.replace("\n"," ").strip()
+            if (not item.title) or (not item.summary):
+                continue
             if len(item.summary)>1000:
                 item.summary = item.summary[:1000] + "..."
             if len(item.title)>50:

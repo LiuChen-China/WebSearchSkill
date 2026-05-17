@@ -1,12 +1,13 @@
 ﻿# 浏览器配置
 browser: 
   # 是否无头模式
-  headless: false
+  headless: true
   # 是否远程模式
   remote_mode: false
   # 远程 CDP 端点（示例）
   remote_cdp_endpoint: ""
 # 大模型配置
 llm:
-  openai_api: "http://localhost:10002/v1"
+  switch: false
+  openai_api: "http://127.0.0.1:10002/v1"
   model: "Qwen3.6-27B-UD-Q4_K_XL.gguf"

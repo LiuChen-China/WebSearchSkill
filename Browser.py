@@ -127,6 +127,18 @@ class Browser:
         valid = [c for c in cookies if c.get("sameSite") in ("Strict", "Lax", "None")]
         await self._context.add_cookies(valid)
 
+    async def get_page_title(self, page_id: str = None) -> str:
+        """
+        获取指定页面的标题
+        :param page_id: 页面ID，不填则使用默认页面
+        :return: 页面标题字符串
+        """
+        try:
+            page = await self.get_page(page_id)
+            return await page.title()
+        except Exception as e:
+            return ""
+
     async def get_page_html(self, page_id: str = None) -> str:
         """
         获取指定页面的完整 HTML

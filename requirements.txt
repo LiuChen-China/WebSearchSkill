@@ -4,3 +4,4 @@ pydantic==2.13.3
 trafilatura==2.0.0
 fastapi==0.136.1
 uvicorn==0.46.0
+agentscope==1.0.18
